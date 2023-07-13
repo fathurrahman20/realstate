@@ -1,9 +1,9 @@
-import "./App.css";
+import Router from "./router/router";
 
 function App() {
   return (
     <>
-      <h1 className="text-2xl">Hello World!</h1>
+      <Router />
     </>
   );
 }
