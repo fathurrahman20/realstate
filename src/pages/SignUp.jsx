@@ -1,7 +1,11 @@
 import {useState} from "react";
 import {AiFillEye, AiFillEyeInvisible} from "react-icons/ai";
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import OAuth from "../components/OAuth";
+import {getAuth, createUserWithEmailAndPassword, updateProfile} from "firebase/auth";
+import {db} from "../firebase";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import {toast} from "react-toastify";
 
 export default function SignUp(){
     const [formData, setFormData] = useState({
@@ -11,11 +15,33 @@ export default function SignUp(){
     });
     const [showPassword, setShowPassword] = useState(false);
     const {name, email, password} = formData;
+    const navigate = useNavigate();
     function onChange(e){
         setFormData((prevState) => ({
             ...prevState,
             [e.target.id]: e.target.value,
         }));
+    };
+    async function onSubmit(e){
+        e.preventDefault();
+
+        try {
+            const auth = getAuth();
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+            updateProfile(auth.currentUser, {
+                displayName: name
+            });
+            const user = userCredential.user;
+            const formDataCopy = {...formData};
+            delete formDataCopy.password;
+            formDataCopy.timestamp = serverTimestamp();
+            await setDoc(doc(db, "users", user.uid), formDataCopy);
+            toast.success("Sign up was successful");
+            navigate("/");
+        } catch (error) {
+            toast.error("Something went wrong with the registration");
+        }
     }
     return (
         <section>
@@ -26,7 +52,7 @@ export default function SignUp(){
                     <img src="https://images.pexels.com/photos/280221/pexels-photo-280221.jpeg?auto=compress&cs=tinysrgb&w=600" alt="real estate" className="w-full rounded-2xl"/>
                 </div>
                 <div className="w-full md:w-[67%] lg:w-[40%] lg:ml-10">
-                    <form>
+                    <form onSubmit={onSubmit}>
                         <input id="name" type="text" className="w-full rounded transition ease-in-out px-3 text-gray-700 border-gray-300 mb-6" placeholder="Full Name" value={name} onChange={onChange}/>
                         <input id="email" type="email" className="w-full rounded transition ease-in-out px-3 text-gray-700 border-gray-300 mb-6" placeholder="Email Address" value={email} onChange={onChange}/>
                         <div className="relative">
